@@ -37,7 +37,7 @@ export default {
     return {
       // 动态绑定表单数据
       user: {
-        mobile: '13911111111',
+        mobile: '18801185985',
         code: '246810'
       },
       isLoginLoading: false

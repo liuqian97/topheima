@@ -3,10 +3,15 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import Vant from 'vant'
+
 import VeeValidate, { Validator } from 'vee-validate'
 import zhCN from 'vee-validate/dist/locale/zh_CN'
 import 'vant/lib/index.css'
+
 import '@/styles/index.css'
+
+import { relativeTime } from '@/utils/dayjs'
+Vue.filter('relativeTime', relativeTime)
 
 Vue.use(Vant)
 Vue.use(VeeValidate, { event: '' })
