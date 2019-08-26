@@ -11,6 +11,22 @@
     }
 
 }
+//tab标签栏active时的选中的颜色
 .van-tabs__line {
     background-color: #3196fa;
+}
+// 让tab标签栏固定定位
+.homeIndex {
+    .van-tabs {
+      .van-tabs__wrap--scrollable {
+          position: fixed;
+          top: 46px;
+          left: 0;
+          right: 16px;
+          z-index: 2;
+      }
+      .van-tabs__content {
+          margin-top: 90px;
+      }
+    }
 }

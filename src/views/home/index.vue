@@ -1,6 +1,6 @@
 <template>
   <div class="homeIndex">
-    <van-nav-bar title="首页" />
+    <van-nav-bar title="首页" fixed />
     <van-tabs v-model="activeChannelIndex">
       <van-tab v-for="channel in channels" :title="channel.name" :key="channel.id" color="#3196fa">
         <van-pull-refresh v-model="channel.pullLoading" @refresh="onRefresh">
@@ -11,10 +11,11 @@
             @load="onLoad"
           >
             <van-cell
-             v-for="article in channel.articles"
-             :key="article.id"
-             :title="article.title"
-             style="font-size:16px">
+              v-for="article in channel.articles"
+              :key="article.id"
+              :title="article.title"
+              style="font-size:16px"
+            >
               <div slot="label">
                 <van-grid :border="false" :column-num="3">
                   <van-grid-item v-for="(img,index) in article.cover.images" :key="index">
@@ -26,21 +27,47 @@
                 <div class="article-item-label">
                   <span>{{article.aut_name}}</span>
                   <span>{{article.collect_count}}评论</span>
-                   <!-- 调用全局过滤器relativeTime -->
+                  <!-- 调用全局过滤器relativeTime -->
                   <span>{{article.pubdate | relativeTime }}</span>
                 </div>
+                <van-icon class="icon-close" name="close" @click="onClose(article)" />
               </div>
             </van-cell>
           </van-list>
         </van-pull-refresh>
       </van-tab>
     </van-tabs>
+    <!-- 举报弹框 -->
+    <van-dialog
+      v-model="isReportShow"
+      :show-cancel-button="false"
+      :showConfirmButton="false"
+      closeOnClickOverlay
+    >
+      <van-cell-group v-if="!isRubbishShow">
+        <van-cell title="反馈垃圾内容" icon="fail" is-link @click="isRubbishShow=true" />
+        <van-cell title="拉黑作者" icon="plus" @click="onAddBlackLists" />
+      </van-cell-group>
+      <!-- 点击垃圾内容,才显示下拉选项 -->
+      <van-cell-group v-else>
+        <van-cell icon="arrow-left" @click="isRubbishShow=false" />
+        <!-- 循环反馈类型 -->
+        <van-cell
+          :title="item.label"
+          icon="location-o"
+          v-for="item in reportType"
+          :key="item.value"
+          @click="onReportArticles(item.value)"
+        />
+      </van-cell-group>
+    </van-dialog>
   </div>
 </template>
 
 <script>
 import { getDefaultOrUserChannel } from '@/api/channel'
-import { getArticles } from '@/api/articles'
+import { getArticles, reportArticles } from '@/api/articles'
+import { addBlackLists } from '@/api/user'
 
 export default {
   name: 'HomeIndex',
@@ -48,7 +75,25 @@ export default {
     return {
       activeChannelIndex: 0,
       // 存储获取到到频道列表
-      channels: []
+      channels: [],
+      // 举报弹框是否显示
+      isReportShow: false,
+      // 控制返回垃圾的显示
+      isRubbishShow: false,
+      currentArticles: null,
+      // 举报文章类型
+      reportType: [
+        { label: '其他问题', value: 0 },
+        { label: '标题夸张', value: 1 },
+        { label: '低俗色情', value: 2 },
+        { label: '错别字多', value: 3 },
+        { label: '旧闻重复', value: 4 },
+        { label: '广告软文', value: 5 },
+        { label: '内容不实', value: 6 },
+        { label: '涉嫌违法犯罪', value: 7 },
+        { label: '侵权', value: 8 }
+
+      ]
     }
   },
   computed: {
@@ -110,13 +155,56 @@ export default {
       // 数据加载完毕后,将下拉刷新到loading关闭
       currentChannel.pullLoading = false
       this.$toast('刷新成功')
+    },
+    onClose (articles) {
+      this.isReportShow = true
+      this.currentArticles = articles
+    },
+    async onAddBlackLists () {
+      const authId = this.currentArticles.aut_id
+      await addBlackLists(authId)
+      // 将拉黑的作者的文章从客服端移除
+      this.channels.forEach(channel => {
+        const articles = channel.articles
+        for (let i = 0; i < articles.length; i++) {
+          const article = articles[i]
+          if (article.aut_id === authId) {
+            articles.splice(i, 1)
+            i--
+          }
+        }
+      })
+      this.isReportShow = false // 关闭弹窗
+      this.$toast('拉黑成功,将减少此类内容推送')
+    },
+    async onReportArticles (type) {
+      try { 
+        await reportArticles({
+          articleId: this.currentArticles.art_id.toString(),
+ 	        type
+        })
+        this.$toast('举报成功')
+      } catch (err) {
+        console.log(err)
+        this.$toast('已经举报过了')
+      }
+      // 关闭弹窗
+      this.isReportShow = false
     }
   }
 }
 </script>
 
-<style scoped>
- .article-item-label span {
+<style scoped lang="less">
+.article-item-label {
+  display: inline-block;
+  span {
     margin-right: 10px;
- }
+  }
+}
+.icon-close {
+  display: inline-block;
+  position: fixed;
+  right: 10px;
+}
 </style>

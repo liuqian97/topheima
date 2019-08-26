@@ -11,3 +11,13 @@
 .van-tabs__line {
   background-color: #3196fa;
 }
+.homeIndex .van-tabs .van-tabs__wrap--scrollable {
+  position: fixed;
+  top: 46px;
+  left: 0;
+  right: 16px;
+  z-index: 2;
+}
+.homeIndex .van-tabs .van-tabs__content {
+  margin-top: 90px;
+}

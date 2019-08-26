@@ -15,3 +15,20 @@ export const getArticles = params => {
     }
   })
 }
+
+// 举报文章
+export const reportArticles = ({
+  articleId,
+  type,
+  remark = null
+}) => {
+  return request({
+    method: 'POST',
+    url: '/app/v1_0/article/reports',
+    data: {
+      target: articleId,
+      type,
+      remark
+    }
+  })
+}
