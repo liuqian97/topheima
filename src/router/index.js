@@ -1,8 +1,9 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import login from '@/views/login'
-import home from '@/views/home'
-import tabbar from '@/views/tabbar'
+import Login from '@/views/login'
+import Home from '@/views/home'
+import Tabbar from '@/views/tabbar'
+import Search from '@/views/search'
 
 Vue.use(Router)
 
@@ -11,16 +12,21 @@ export default new Router({
     {
       name: 'login',
       path: '/login',
-      component: login
+      component: Login
+    },
+    {
+      name: 'search',
+      path: '/search',
+      component: Search
     },
     {
       path: '/',
-      component: tabbar,
+      component: Tabbar,
       children: [
         {
           name: 'home',
           path: '',
-          component: home
+          component: Home
         }
       ]
     }

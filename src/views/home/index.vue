@@ -1,7 +1,19 @@
 <template>
   <div class="homeIndex">
-    <van-nav-bar title="首页" fixed />
+    <van-nav-bar fixed>
+      <van-button
+      color="#5babfb"
+      size="small"
+      slot="title"
+      icon="search"
+      round
+      class="search-btn"
+      type="primary">搜索</van-button>
+    </van-nav-bar>
     <van-tabs v-model="activeChannelIndex">
+      <div slot="nav-right" class="wap-nav">
+        <van-icon name="wap-nav" size="24" @click="isChannelEditShow=true"></van-icon>
+      </div>
       <van-tab v-for="channel in channels" :title="channel.name" :key="channel.id" color="#3196fa">
         <van-pull-refresh v-model="channel.pullLoading" @refresh="onRefresh">
           <van-list
@@ -12,7 +24,7 @@
           >
             <van-cell
               v-for="article in channel.articles"
-              :key="article.id"
+              :key="article.art_id.toString()"
               :title="article.title"
               style="font-size:16px"
             >
@@ -53,24 +65,38 @@
         <van-cell icon="arrow-left" @click="isRubbishShow=false" />
         <!-- 循环反馈类型 -->
         <van-cell
-          :title="item.label"
+          :title="item.title"
           icon="location-o"
           v-for="item in reportType"
-          :key="item.value"
-          @click="onReportArticles(item.value)"
+          :key="item.type"
+          @click="onReportArticles(item.type)"
         />
       </van-cell-group>
     </van-dialog>
+    <!-- 举报弹框 -->
+    <!-- 编辑频道组件 -->
+    <channel-edit
+     v-model="isChannelEditShow"
+     :my-channels="channels"
+     :active-index="activeChannelIndex"
+     @update-active="activeChannelIndex=$event"
+     ></channel-edit>
+    <!-- 编辑频道组件 -->
   </div>
 </template>
 
 <script>
 import { getDefaultOrUserChannel } from '@/api/channel'
-import { getArticles, reportArticles } from '@/api/articles'
+import { getArticles, reportArticle } from '@/api/articles'
 import { addBlackLists } from '@/api/user'
+import ChannelEdit from './components/channel-edit'
+import { mapState } from 'vuex'
 
 export default {
   name: 'HomeIndex',
+  components: {
+    ChannelEdit
+  },
   data () {
     return {
       activeChannelIndex: 0,
@@ -83,20 +109,21 @@ export default {
       currentArticles: null,
       // 举报文章类型
       reportType: [
-        { label: '其他问题', value: 0 },
-        { label: '标题夸张', value: 1 },
-        { label: '低俗色情', value: 2 },
-        { label: '错别字多', value: 3 },
-        { label: '旧闻重复', value: 4 },
-        { label: '广告软文', value: 5 },
-        { label: '内容不实', value: 6 },
-        { label: '涉嫌违法犯罪', value: 7 },
-        { label: '侵权', value: 8 }
-
-      ]
+        { title: '其他问题', type: 0 },
+        { title: '标题夸张', type: 1 },
+        { title: '低俗色情', type: 2 },
+        { title: '错别字多', type: 3 },
+        { title: '旧闻重复', type: 4 },
+        { title: '广告软文', type: 5 },
+        { title: '内容不实', type: 6 },
+        { title: '涉嫌违法犯罪', type: 7 },
+        { title: '侵权', type: 8 }
+      ],
+      isChannelEditShow: false
     }
   },
   computed: {
+    ...mapState(['user']),
     // 获取当前激活的频道
     currentChannel () {
       return this.channels[this.activeChannelIndex]
@@ -109,20 +136,21 @@ export default {
   methods: {
     // 获取频道列表
     async loadChannels () {
-      const { data } = await getDefaultOrUserChannel()
-      data.data.channels.forEach(channel => {
-        // 存储每个频道的文章列表
-        channel.articles = []
-        // 存储频道下拉刷新的loading状态
-        channel.pullLoading = false
-        // 存储频道是否加载完毕的状态
-        channel.finished = false
-        // 存储频道上拉加载刷新的loading状态
-        channel.loading = false
-        // 存储当前频道加载下一页数据的时间戳标志（页码）
-        channel.timestamp = null
-      })
-      this.channels = data.data.channels
+      let channels = []
+      if (this.user) {
+        const { data } = await getDefaultOrUserChannel()
+        channels = data.data.channels
+      } else {
+        const localChannels = JSON.parse(window.localStorage.getItem('channels'))
+        if (localChannels) {
+          channels = localChannels
+        } else {
+          const { data } = await getDefaultOrUserChannel()
+          channels = data.data.channels
+        }
+      }
+
+      this.channels = channels
     },
     async onLoad () {
       const { currentChannel } = this
@@ -132,7 +160,7 @@ export default {
         withTop: 1
       })
       const { results, pre_timestamp: preTimestamp } = data.data
-      // 将获取到的文章列表添加到当天频道中
+      // 将获取到的文章列表添加到当前频道中
       currentChannel.articles.push(...results)
       if (preTimestamp) {
         currentChannel.timestamp = preTimestamp
@@ -178,10 +206,10 @@ export default {
       this.$toast('拉黑成功,将减少此类内容推送')
     },
     async onReportArticles (type) {
-      try { 
-        await reportArticles({
-          articleId: this.currentArticles.art_id.toString(),
- 	        type
+      try {
+        await reportArticle({
+          articleId: this.article.art_id.toString(),
+          type
         })
         this.$toast('举报成功')
       } catch (err) {
@@ -206,5 +234,16 @@ export default {
   display: inline-block;
   position: fixed;
   right: 10px;
+}
+.wap-nav {
+  position:sticky;
+  right: 0;
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  opacity: 0.8;
+}
+.search-btn {
+  width: 100px;
 }
 </style>

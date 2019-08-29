@@ -17,7 +17,7 @@ export const getArticles = params => {
 }
 
 // 举报文章
-export const reportArticles = ({
+export const reportArticle = ({
   articleId,
   type,
   remark = null
