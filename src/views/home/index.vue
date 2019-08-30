@@ -8,7 +8,9 @@
       icon="search"
       round
       class="search-btn"
-      type="primary">搜索</van-button>
+      type="primary"
+      @click="$router.push({name:'search'})"
+      >搜索</van-button>
     </van-nav-bar>
     <van-tabs v-model="activeChannelIndex">
       <div slot="nav-right" class="wap-nav">
@@ -244,6 +246,9 @@ export default {
   opacity: 0.8;
 }
 .search-btn {
-  width: 100px;
+  width: 100%;
+  .van-icon {
+    color:#fff;
+  }
 }
 </style>
